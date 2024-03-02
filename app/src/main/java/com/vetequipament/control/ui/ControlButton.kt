@@ -9,47 +9,73 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.vetequipament.control.LocalDim
+import com.vetequipament.control.ui.theme.LocalColor
+
+
 
 @Composable
 fun CircleWithBorder(
-    borderColor: Color,
-    backgroundColor: Color,
-    borderWidth: Dp,
-    size: Dp
+    buttonText: String,
+    buttonColor: Color,
+    onClick: () -> Unit
 ) {
+    val dimens = LocalDim.current
+    val colors = LocalColor.current
+    var currentButtonColor by remember { mutableStateOf(buttonColor) }
+    var currentBackgroundColor by remember { mutableStateOf(colors.backgroundButtonColor) }
+    var currentTextButtonColor by remember { mutableStateOf(colors.textColor) }
     Box(
         modifier = Modifier
             .border(
-                width = borderWidth,
-                color = borderColor,
+                width = dimens.buttonBorderWidth,
+                color = currentButtonColor,
                 shape = CircleShape
             )
-            .padding(borderWidth)
-            .size(size)
-            .background(backgroundColor, shape = CircleShape)
+            .padding(dimens.buttonBorderWidth)
+            .size(dimens.buttonSize)
+            .background(currentBackgroundColor, shape = CircleShape)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type == PointerEventType.Press) {
+                            val tempBgColor = currentBackgroundColor
+                            currentBackgroundColor = currentButtonColor
+                            currentButtonColor = tempBgColor
+                            currentTextButtonColor = tempBgColor
+                            onClick()
+                        } else if (event.type == PointerEventType.Release) {
+                            val tempBgColor = currentBackgroundColor
+                            currentBackgroundColor = currentButtonColor
+                            currentButtonColor = tempBgColor
+                            currentTextButtonColor = colors.textColor
+                        }
+                    }
+                }
+            }
     ) {
         Text(
             modifier = Modifier.align(Alignment.Center),
-            text = "Start",
+            text = buttonText,
+            fontWeight = FontWeight(500),
             style = TextStyle(
-                fontSize = 24.sp,
-                lineHeight = 25.sp,
-                fontWeight = FontWeight(300),
-                color = Color(0xFFFFFFFF),
+                fontSize = dimens.textButtonFontSize,
+                color = currentTextButtonColor,
                 textAlign = TextAlign.Center,
-                letterSpacing = 0.5.sp,
+                letterSpacing = dimens.textButtonLetterSpacing,
             )
         )
     }
@@ -58,17 +84,10 @@ fun CircleWithBorder(
 
 @Composable
 fun ControlButton(
-    borderColor: Color,
-    backgroundColor: Color,
-    borderWidth: Dp,
-    size: Dp,
+    buttonText: String,
+    buttonColor: Color,
     onClick: () -> Unit) {
-    val isClicked by remember { mutableStateOf(false) }
-    val currentBorderColor = if (isClicked) backgroundColor else borderColor
-    val currentBackgroundColor = if (isClicked) borderColor else backgroundColor
-    onClick().apply {
-        isClicked != isClicked
-    }
+    CircleWithBorder(buttonText, buttonColor, onClick)
 }
 
 
@@ -76,10 +95,10 @@ fun ControlButton(
 @Preview
 @Composable
 fun CircleStartPreview() {
-    CircleWithBorder(
-        Color(0xFF33FF00),
-        Color(0x00FFFFFF),
-        5.dp,
-        95.dp
+    val colors = LocalColor.current
+    ControlButton(
+        "Start",
+        colors.startColor,
+        {}
     )
 }
